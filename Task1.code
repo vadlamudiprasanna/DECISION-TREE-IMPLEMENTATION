@@ -1,0 +1,52 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+from google.colab import files
+
+# Step 1: Upload file
+uploaded = files.upload()
+filename = list(uploaded.keys())[0]
+
+# Step 2: Read incorrectly formatted dataset
+raw_data = pd.read_csv(filename)
+
+# Step 3: Split the single column using "|"
+raw_data.columns = ['raw']
+split_data = raw_data['raw'].str.split('|', expand=True)
+
+# Step 4: Drop empty columns and header row
+split_data = split_data.drop(columns=[0, len(split_data.columns)-1])  # remove outer pipes
+split_data.columns = ['HoursStudied', 'Attendance', 'AssignmentsSubmitted', 'Result']
+split_data = split_data[1:]  # remove the first row (it was header again)
+
+# Step 5: Clean whitespace and convert data types
+split_data = split_data.apply(lambda x: x.str.strip())
+split_data = split_data.astype({
+    'HoursStudied': 'float',
+    'Attendance': 'int',
+    'AssignmentsSubmitted': 'int'
+})
+
+# Step 6: Feature & target
+X = split_data[['HoursStudied', 'Attendance', 'AssignmentsSubmitted']]
+y = split_data['Result']
+
+# Step 7: Train/test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Step 8: Train the Decision Tree
+model = DecisionTreeClassifier(criterion='entropy', random_state=42)
+model.fit(X_train, y_train)
+
+# Step 9: Evaluation
+y_pred = model.predict(X_test)
+print("\n✅ Accuracy:", accuracy_score(y_test, y_pred))
+print("\n✅ Classification Report:\n", classification_report(y_test, y_pred))
+
+# Step 10: Visualize the Decision Tree
+plt.figure(figsize=(16, 8))
+plot_tree(model, filled=True, feature_names=X.columns, class_names=model.classes_)
+plt.title("🌳 Decision Tree Visualization")
+plt.show()
